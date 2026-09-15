@@ -1,0 +1,16 @@
+{
+  "name": "claude-code-shunt",
+  "owner": { "name": "Alexcding" },
+  "metadata": {
+    "description": "Local, self-hosted take on Spotify's shunt plugin: keep big file reads and boilerplate off the frontier model by routing them to a Sonnet subagent."
+  },
+  "plugins": [
+    {
+      "name": "shunt",
+      "source": "./plugins/shunt",
+      "description": "Blocks oversized reads and delegates them to a Sonnet bulk-reader / code-writer subagent. No external services.",
+      "version": "0.1.0",
+      "category": "productivity"
+    }
+  ]
+}

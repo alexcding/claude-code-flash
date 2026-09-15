@@ -1,0 +1,7 @@
+{
+  "name": "shunt",
+  "version": "0.1.0",
+  "description": "Cut Claude Code token usage by blocking large file reads and delegating them to a cheaper Sonnet subagent. Fully local; nothing leaves your Anthropic account.",
+  "author": { "name": "Alexcding" },
+  "keywords": ["tokens", "cost", "hooks", "subagent", "delegation"]
+}
