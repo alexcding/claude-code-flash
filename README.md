@@ -57,6 +57,7 @@ Environment variables, settable in your shell or in `.claude/settings.json`:
 | `SHUNT_ALLOW_DIFF` | unset | Set to `1` to switch off only the diff hook. |
 | `SHUNT_DISABLE` | unset | Set to `1` to switch all hooks off. |
 | `CLAUDE_CODE_SUBAGENT_MODEL` | unset | Claude Code's own setting; `sonnet` makes every subagent without an explicit `model:` run on Sonnet. |
+| `CLAUDE_CODE_MAX_SUBAGENT_SPAWN_DEPTH` | unset | Claude Code's own setting; `1` stops subagents from spawning subagents, so a worker can never fan out on the expensive model. The standalone settings set this. |
 
 Plugins cannot set environment variables for you, so put these in your shell or `.claude/settings.json`.
 

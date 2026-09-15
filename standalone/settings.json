@@ -2,21 +2,31 @@
   "$schema": "https://json.schemastore.org/claude-code-settings.json",
   "env": {
     "CLAUDE_CODE_SUBAGENT_MODEL": "sonnet",
-    "SHUNT_MIN_LINES": "200"
+    "SHUNT_MIN_LINES": "200",
+    "CLAUDE_CODE_MAX_SUBAGENT_SPAWN_DEPTH": "1"
   },
   "hooks": {
     "PreToolUse": [
       {
         "matcher": "Read",
         "hooks": [
-          { "type": "command", "command": "python3 \"$HOME\"/.claude/hooks/shunt/check_file_size.py" }
+          {
+            "type": "command",
+            "command": "python3 \"$HOME\"/.claude/hooks/shunt/check_file_size.py"
+          }
         ]
       },
       {
         "matcher": "Bash",
         "hooks": [
-          { "type": "command", "command": "python3 \"$HOME\"/.claude/hooks/shunt/check_bash_read.py" },
-          { "type": "command", "command": "python3 \"$HOME\"/.claude/hooks/shunt/check_diff_dump.py" }
+          {
+            "type": "command",
+            "command": "python3 \"$HOME\"/.claude/hooks/shunt/check_bash_read.py"
+          },
+          {
+            "type": "command",
+            "command": "python3 \"$HOME\"/.claude/hooks/shunt/check_diff_dump.py"
+          }
         ]
       }
     ]
