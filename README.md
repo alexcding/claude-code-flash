@@ -14,7 +14,8 @@ Spotify's version routes files to workers on their internal Portal platform. Thi
 | `bulk-reader` agent | Sonnet subagent that reads files and returns structured bullets, never file dumps. |
 | `code-writer` agent | Sonnet subagent that writes pattern-following boilerplate and reports back a file list instead of the code. |
 | `reviewer` agent | Opus subagent that reviews a diff and returns verified findings as a table. |
-| `shunt` skill | Routing rules so the main model delegates on its own, before the hooks force it. |
+| `SessionStart` hook | Injects [`context/rules.md`](plugins/shunt/context/rules.md) into every main session (startup, resume, `/clear`, after compaction): response contract, roster, delegation, six-part briefs, task buckets, verification and reporting rules. Works like a global `CLAUDE.md` without touching yours. |
+| `/task` command | Task dashboard. `/task` lists buckets under `.claude/scratch/`; `/task <sentence>` continues the matching bucket or opens a new one. |
 
 Subagents are exempt from all hooks, so the workers can read whatever they need. The hooks also see through `rtk`, `sudo`, `time`, and leading `VAR=x` prefixes.
 
@@ -34,10 +35,9 @@ If you would rather have the pieces in `~/.claude` directly (agents, hooks, sett
 ```
 git clone https://github.com/Alexcding/claude-code-shunt
 ./claude-code-shunt/standalone/install.sh
-cat claude-code-shunt/standalone/CLAUDE.md.snippet >> ~/.claude/CLAUDE.md
 ```
 
-The script copies the agents and hook scripts, merges the `env` and `hooks` entries from `standalone/settings.json` into your settings, and leaves everything else untouched.
+The script copies the agents, `/task`, hook scripts and rules, then merges the `env` and `hooks` entries from `standalone/settings.json` into your settings, and leaves everything else untouched.
 
 ## Configure
 
@@ -55,11 +55,22 @@ Environment variables, settable in your shell or in `.claude/settings.json`:
 |---|---|---|
 | `SHUNT_MIN_LINES` | `200` | Files longer than this are blocked from whole-file reads. Raise to `350` or `500` if it feels too eager. |
 | `SHUNT_ALLOW_DIFF` | unset | Set to `1` to switch off only the diff hook. |
-| `SHUNT_DISABLE` | unset | Set to `1` to switch all hooks off. |
+| `SHUNT_DISABLE` | unset | Set to `1` to switch all hooks off, including the rules injection. |
+| `SHUNT_NO_RULES` | unset | Set to `1` to skip only the `SessionStart` rules injection. |
 | `CLAUDE_CODE_SUBAGENT_MODEL` | unset | Claude Code's own setting; `sonnet` makes every subagent without an explicit `model:` run on Sonnet. |
 | `CLAUDE_CODE_MAX_SUBAGENT_SPAWN_DEPTH` | unset | Claude Code's own setting; `1` stops subagents from spawning subagents, so a worker can never fan out on the expensive model. The standalone settings set this. |
 
-Plugins cannot set environment variables for you, so put these in your shell or `.claude/settings.json`.
+Plugins cannot set environment variables for you, so put these in your shell or `.claude/settings.json`. The rules assume `CLAUDE_CODE_MAX_SUBAGENT_SPAWN_DEPTH=1`; with the plugin install, add it yourself:
+
+```json
+{
+  "env": {
+    "CLAUDE_CODE_MAX_SUBAGENT_SPAWN_DEPTH": "1"
+  }
+}
+```
+
+The rules are opinionated. Edit `plugins/shunt/context/rules.md` in a fork to change them; a repo's own `CLAUDE.md` wins on conflict.
 
 To use a different worker model, edit `model:` in `plugins/shunt/agents/*.md` (`haiku` is cheaper still, `opus` if you want more judgement in summaries).
 
@@ -89,17 +100,20 @@ An empty response means "allow". A JSON object with `permissionDecision: "deny"`
 .claude-plugin/marketplace.json     marketplace manifest
 plugins/shunt/
   .claude-plugin/plugin.json        plugin manifest
-  hooks/hooks.json                  PreToolUse hooks for Read and Bash
+  hooks/hooks.json                  PreToolUse hooks for Read and Bash, SessionStart rules hook
   scripts/                          hook implementations (python3, stdlib only)
   agents/                           bulk-reader, code-writer, reviewer subagents
-  skills/shunt/SKILL.md             routing rules
+  commands/task.md                  /task dashboard
+  context/rules.md                  rules injected at session start
 standalone/                         install without the plugin system
-  install.sh, settings.json, CLAUDE.md.snippet
+  install.sh, settings.json
 ```
 
 ## Credits
 
 The routing idea and the hook set come from Spotify's shunt plugin in [spotify/portal-ai-plugins](https://github.com/spotify/portal-ai-plugins). This repo re-implements it without Portal so anyone can run it.
+
+The rules (response contract, briefs, task buckets, verification, reporting) and `/task` are adapted from [SirRuggie/claude-code-orchestration-kit](https://github.com/SirRuggie/claude-code-orchestration-kit) (MIT), with the roster swapped for bulk-reader / code-writer / reviewer.
 
 ## License
 

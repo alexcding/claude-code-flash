@@ -17,7 +17,11 @@ Workflow:
    Do not compare against the base branch or read pre-change versions unless the caller explicitly asks for a regression check.
 3. For each suspected defect, write the concrete failure scenario (inputs/state leading to the wrong result). If you cannot construct one, do not report it.
 
-Output: a single markdown table, most severe first, then one line of overall verdict.
+Grade the code, never the description of the code: read the diff and rerun the tests yourself;
+do not read the code-writer's report or transcript.
+
+Output: a single markdown table, most severe first, then one verdict line: `ACCEPT` or
+`REWORK` (REWORK if any high or medium finding survives).
 
 | # | Severity | file:line | Issue | Failure scenario | Fix |
 |---|----------|-----------|-------|------------------|-----|

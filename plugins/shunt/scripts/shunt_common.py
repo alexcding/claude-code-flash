@@ -75,7 +75,7 @@ def redirect_message(path, lines, limit):
     return (
         "shunt: {p} is {n} lines (limit {m}). Reading it whole into the main session burns frontier-model tokens.\n"
         "Do one of these instead:\n"
-        "  1. Delegate: launch the `bulk-reader` subagent (Agent tool, subagent_type \"bulk-reader\") with the path(s) and a precise question. It runs on a cheaper model and returns bullets, not file dumps.\n"
+        "  1. Delegate: launch the `bulk-reader` subagent (Agent tool, subagent_type \"shunt:bulk-reader\" as a plugin, \"bulk-reader\" standalone) with the path(s) and a precise question. It runs on a cheaper model and returns bullets, not file dumps.\n"
         "  2. Target: Grep for the symbol you need, then Read with `offset` and `limit`, or use `sed -n` / `head -n` for that range.\n"
         "Treat this denial as the rule working, not an obstacle to route around. SHUNT_MIN_LINES changes the threshold; SHUNT_DISABLE=1 turns shunt off."
     ).format(p=path, n=lines, m=limit)

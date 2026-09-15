@@ -29,6 +29,16 @@
           }
         ]
       }
+    ],
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"$HOME\"/.claude/hooks/shunt/session_rules.py"
+          }
+        ]
+      }
     ]
   }
 }
