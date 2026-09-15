@@ -1,6 +1,7 @@
-"""Shared helpers for the shunt hooks."""
+"""Shared helpers for the shunt hooks (python3 stdlib only)."""
 import json
 import os
+import re
 import sys
 
 BINARY_EXT = {
@@ -11,26 +12,43 @@ BINARY_EXT = {
 }
 
 
-def min_lines() -> int:
+def min_lines():
     try:
         return max(1, int(os.environ.get("SHUNT_MIN_LINES", "350")))
     except ValueError:
         return 350
 
 
-def disabled() -> bool:
+def disabled():
     return os.environ.get("SHUNT_DISABLE", "").lower() in {"1", "true", "yes"}
 
 
-def read_input() -> dict:
+def read_input():
     try:
         return json.load(sys.stdin)
     except Exception:
         return {}
 
 
+def is_subagent(data):
+    """Subagents are the cheap workers; they are allowed to read whatever they need."""
+    transcript = data.get("transcript_path") or ""
+    return "/subagents/" in transcript
+
+
+def strip_wrappers(command):
+    """Drop leading env assignments and known wrappers (rtk, sudo, time, nice)."""
+    command = command.strip()
+    while True:
+        new = re.sub(r"^(?:[A-Za-z_][A-Za-z0-9_]*=\S*\s+)+", "", command)
+        new = re.sub(r"^(?:rtk|sudo|time|nice)\s+", "", new)
+        if new == command:
+            return command
+        command = new
+
+
 def count_lines(path):
-    """Return the line count of a regular text file, or None if it should be skipped."""
+    """Line count of a regular text file, or None if the file should be ignored."""
     if not os.path.isfile(path):
         return None
     if os.path.splitext(path)[1].lower() in BINARY_EXT:
@@ -42,7 +60,7 @@ def count_lines(path):
         return None
 
 
-def deny(reason: str) -> None:
+def deny(reason):
     print(json.dumps({
         "hookSpecificOutput": {
             "hookEventName": "PreToolUse",
@@ -53,11 +71,11 @@ def deny(reason: str) -> None:
     sys.exit(0)
 
 
-def redirect_message(path: str, lines: int, limit: int) -> str:
+def redirect_message(path, lines, limit):
     return (
-        f"shunt: {path} is {lines} lines (limit {limit}). Reading it whole would burn frontier-model tokens.\n"
+        "shunt: {p} is {n} lines (limit {m}). Reading it whole into the main session burns frontier-model tokens.\n"
         "Do one of these instead:\n"
-        f"  1. Delegate: launch the `bulk-reader` subagent (Agent tool, subagent_type \"bulk-reader\") with the file path and the specific question you need answered. It runs on Sonnet and returns only a summary or the relevant excerpts.\n"
-        "  2. Target: search first (Grep for the symbol you need), then Read with `offset` and `limit` to pull just those lines.\n"
-        f"Set SHUNT_MIN_LINES to change the threshold, or SHUNT_DISABLE=1 to turn shunt off."
-    )
+        "  1. Delegate: launch the `bulk-reader` subagent (Agent tool, subagent_type \"bulk-reader\") with the path(s) and a precise question. It runs on a cheaper model and returns bullets, not file dumps.\n"
+        "  2. Target: Grep for the symbol you need, then Read with `offset` and `limit`, or use `sed -n` / `head -n` for that range.\n"
+        "Treat this denial as the rule working, not an obstacle to route around. SHUNT_MIN_LINES changes the threshold; SHUNT_DISABLE=1 turns shunt off."
+    ).format(p=path, n=lines, m=limit)

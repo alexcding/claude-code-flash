@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
-"""PreToolUse hook for Bash: block `cat`/`less`/`more`/`bat` dumps of large files.
+"""PreToolUse hook for Bash: deny dumping a large file into the main session.
 
-Only the *final* stage of a pipeline is checked: `cat big.log | grep ERROR`
-produces small output and is allowed; a bare `cat big.log` is not.
+Catches `cat`, `head`, `tail`, `less`, `more`, `bat`. Allowed through: subagents,
+anything piped or redirected (`cat big | grep x`, `cat big > copy`), head/tail with an
+explicit count (`head -50`, `tail -n 20`), small files, binary files.
 """
 import os
 import re
@@ -10,36 +11,36 @@ import shlex
 import sys
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from shunt_common import count_lines, deny, disabled, min_lines, read_input, redirect_message  # noqa: E402
+from shunt_common import (count_lines, deny, disabled, is_subagent, min_lines,  # noqa: E402
+                          read_input, redirect_message, strip_wrappers)
 
-DUMP_CMDS = {"cat", "less", "more", "bat", "batcat"}
-
-
-def last_pipeline_stages(command: str):
-    """Yield the last stage of each command in a shell string (split on ; && || newline)."""
-    for chunk in re.split(r"\n|;|&&|\|\|", command):
-        stages = chunk.split("|")
-        yield stages[-1].strip()
+DUMP_CMDS = {"cat", "head", "tail", "less", "more", "bat", "batcat"}
+COUNTED = re.compile(r"(^|\s)-(n|c)?\s*\d+(\s|$)|(^|\s)-(n|c)\s+\d+|--(lines|bytes)[= ]")
 
 
-def main() -> None:
+def main():
     if disabled():
         return
     data = read_input()
+    if is_subagent(data):
+        return
     command = (data.get("tool_input") or {}).get("command") or ""
     cwd = data.get("cwd") or os.getcwd()
     if not command.strip():
         return
 
     limit = min_lines()
-    for stage in last_pipeline_stages(command):
+    for chunk in re.split(r"\n|;|&&|\|\|", command):
+        if "|" in chunk or ">" in chunk:
+            continue  # piped or redirected: output is filtered or not shown
+        stage = strip_wrappers(chunk)
         try:
             words = shlex.split(stage)
         except ValueError:
             continue
-        # Skip leading env assignments like FOO=bar cat file
-        words = [w for w in words if not re.match(r"^[A-Za-z_][A-Za-z0-9_]*=", w)] or []
         if not words or os.path.basename(words[0]) not in DUMP_CMDS:
+            continue
+        if words[0] in {"head", "tail"} and COUNTED.search(stage):
             continue
         for arg in words[1:]:
             if arg.startswith("-"):

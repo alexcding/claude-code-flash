@@ -9,10 +9,14 @@ Spotify's version routes files to workers on their internal Portal platform. Thi
 | Piece | Role |
 |---|---|
 | `Read` hook | Denies whole-file reads over `SHUNT_MIN_LINES` (default 350) and tells Claude to delegate or read a targeted window instead. |
-| `Bash` hook | Denies `cat` / `less` / `more` / `bat` of large files when the output is not piped anywhere. `cat big.log \| grep ERROR` is still allowed. |
-| `bulk-reader` agent | Sonnet subagent that reads files in chunks and returns a summary or only the relevant excerpts. |
-| `code-writer` agent | Sonnet subagent that generates pattern-following boilerplate and reports back a short summary instead of the code. |
-| `shunt` skill | Guidance for when the main model should delegate on its own, before the hooks force it. |
+| `Bash` read hook | Denies `cat` / `head` / `tail` / `less` / `more` / `bat` of large files when the output is not piped or redirected. `cat big.log \| grep ERROR` and `head -50 big.log` are still allowed. |
+| `Bash` diff hook | Denies bare `git diff`, `git show`, and `gh pr diff` in the main session. Summary forms (`--stat`, `--name-only`, `--oneline`, ...) and piped forms pass. |
+| `bulk-reader` agent | Sonnet subagent that reads files and returns structured bullets, never file dumps. |
+| `code-writer` agent | Sonnet subagent that writes pattern-following boilerplate and reports back a file list instead of the code. |
+| `reviewer` agent | Opus subagent that reviews a diff and returns verified findings as a table. |
+| `shunt` skill | Routing rules so the main model delegates on its own, before the hooks force it. |
+
+Subagents are exempt from all hooks, so the workers can read whatever they need. The hooks also see through `rtk`, `sudo`, `time`, and leading `VAR=x` prefixes.
 
 ## Install
 
@@ -22,6 +26,18 @@ claude plugin install shunt@claude-code-shunt
 ```
 
 Restart Claude Code (or start a new session). `python3` must be on your `PATH`; nothing else is required.
+
+### Without the plugin system
+
+If you would rather have the pieces in `~/.claude` directly (agents, hooks, settings):
+
+```
+git clone https://github.com/Alexcding/claude-code-shunt
+./claude-code-shunt/standalone/install.sh
+cat claude-code-shunt/standalone/CLAUDE.md.snippet >> ~/.claude/CLAUDE.md
+```
+
+The script copies the agents and hook scripts, merges the `env` and `hooks` entries from `standalone/settings.json` into your settings, and leaves everything else untouched.
 
 ## Configure
 
@@ -37,8 +53,12 @@ Environment variables, settable in your shell or in `.claude/settings.json`:
 
 | Variable | Default | Meaning |
 |---|---|---|
-| `SHUNT_MIN_LINES` | `350` | Files longer than this are blocked from whole-file reads. |
-| `SHUNT_DISABLE` | unset | Set to `1` to switch the hooks off. |
+| `SHUNT_MIN_LINES` | `350` | Files longer than this are blocked from whole-file reads. `200` is a good aggressive setting. |
+| `SHUNT_ALLOW_DIFF` | unset | Set to `1` to switch off only the diff hook. |
+| `SHUNT_DISABLE` | unset | Set to `1` to switch all hooks off. |
+| `CLAUDE_CODE_SUBAGENT_MODEL` | unset | Claude Code's own setting; `sonnet` makes every subagent without an explicit `model:` run on Sonnet. |
+
+Plugins cannot set environment variables for you, so put these in your shell or `.claude/settings.json`.
 
 To use a different worker model, edit `model:` in `plugins/shunt/agents/*.md` (`haiku` is cheaper still, `opus` if you want more judgement in summaries).
 
@@ -51,7 +71,7 @@ Do one of these instead:
   2. Target: search first (Grep for the symbol you need), then Read with `offset` and `limit` ...
 ```
 
-Claude then either spawns the subagent or narrows the read. Reads that already pass a `limit` at or under the threshold go straight through, so chunked reading inside the subagents is never blocked.
+Claude then either spawns the subagent or narrows the read. Reads that pass `offset` or `limit` go straight through, and subagents are never blocked.
 
 ## Try the hooks by hand
 
@@ -70,9 +90,15 @@ plugins/shunt/
   .claude-plugin/plugin.json        plugin manifest
   hooks/hooks.json                  PreToolUse hooks for Read and Bash
   scripts/                          hook implementations (python3, stdlib only)
-  agents/                           bulk-reader and code-writer subagents
-  skills/shunt/SKILL.md             delegation guidance
+  agents/                           bulk-reader, code-writer, reviewer subagents
+  skills/shunt/SKILL.md             routing rules
+standalone/                         install without the plugin system
+  install.sh, settings.json, CLAUDE.md.snippet
 ```
+
+## Credits
+
+The routing idea and the hook set come from Spotify's shunt plugin in [spotify/portal-ai-plugins](https://github.com/spotify/portal-ai-plugins). This repo re-implements it without Portal so anyone can run it.
 
 ## License
 
