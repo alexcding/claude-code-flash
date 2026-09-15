@@ -14,9 +14,9 @@ BINARY_EXT = {
 
 def min_lines():
     try:
-        return max(1, int(os.environ.get("SHUNT_MIN_LINES", "350")))
+        return max(1, int(os.environ.get("SHUNT_MIN_LINES", "200")))
     except ValueError:
-        return 350
+        return 200
 
 
 def disabled():

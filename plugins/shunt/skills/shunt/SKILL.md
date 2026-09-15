@@ -14,7 +14,7 @@ Planning, architecture, debugging, synthesis: main session. Reading files and wr
 | Diff review | `reviewer` | Opus |
 
 ## Reading
-Delegate to `bulk-reader` whenever you need a file over the threshold (default 350 lines), more than one file, or a sweep of a directory to answer a question. Give it precise paths plus the exact question; it returns bullets, never file dumps. The Read hook denies whole-file reads above `SHUNT_MIN_LINES`; treat that denial as the rule working, not an obstacle to route around.
+Delegate to `bulk-reader` whenever you need a file over the threshold (default 200 lines), more than one file, or a sweep of a directory to answer a question. Give it precise paths plus the exact question; it returns bullets, never file dumps. The Read hook denies whole-file reads above `SHUNT_MIN_LINES`; treat that denial as the rule working, not an obstacle to route around.
 
 Read directly only for a file you already know is small and must quote or edit verbatim, or a targeted `offset`/`limit` range you have already located.
 
@@ -29,6 +29,6 @@ Hand diff reviews to `reviewer`. The Bash hook denies bare `git diff` / `git sho
 - Relay the conclusion, not the agent's transcript.
 
 ## Tuning
-- `SHUNT_MIN_LINES`: line threshold (default 350).
+- `SHUNT_MIN_LINES`: line threshold (default 200).
 - `SHUNT_ALLOW_DIFF=1`: turn off only the diff hook.
 - `SHUNT_DISABLE=1`: turn off all hooks.

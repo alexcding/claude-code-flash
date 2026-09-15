@@ -8,7 +8,7 @@ Spotify's version routes files to workers on their internal Portal platform. Thi
 
 | Piece | Role |
 |---|---|
-| `Read` hook | Denies whole-file reads over `SHUNT_MIN_LINES` (default 350) and tells Claude to delegate or read a targeted window instead. |
+| `Read` hook | Denies whole-file reads over `SHUNT_MIN_LINES` (default 200) and tells Claude to delegate or read a targeted window instead. |
 | `Bash` read hook | Denies `cat` / `head` / `tail` / `less` / `more` / `bat` of large files when the output is not piped or redirected. `cat big.log \| grep ERROR` and `head -50 big.log` are still allowed. |
 | `Bash` diff hook | Denies bare `git diff`, `git show`, and `gh pr diff` in the main session. Summary forms (`--stat`, `--name-only`, `--oneline`, ...) and piped forms pass. |
 | `bulk-reader` agent | Sonnet subagent that reads files and returns structured bullets, never file dumps. |
@@ -46,14 +46,14 @@ Environment variables, settable in your shell or in `.claude/settings.json`:
 ```json
 {
   "env": {
-    "SHUNT_MIN_LINES": "500"
+    "SHUNT_MIN_LINES": "350"
   }
 }
 ```
 
 | Variable | Default | Meaning |
 |---|---|---|
-| `SHUNT_MIN_LINES` | `350` | Files longer than this are blocked from whole-file reads. `200` is a good aggressive setting. |
+| `SHUNT_MIN_LINES` | `200` | Files longer than this are blocked from whole-file reads. Raise to `350` or `500` if it feels too eager. |
 | `SHUNT_ALLOW_DIFF` | unset | Set to `1` to switch off only the diff hook. |
 | `SHUNT_DISABLE` | unset | Set to `1` to switch all hooks off. |
 | `CLAUDE_CODE_SUBAGENT_MODEL` | unset | Claude Code's own setting; `sonnet` makes every subagent without an explicit `model:` run on Sonnet. |
@@ -65,7 +65,7 @@ To use a different worker model, edit `model:` in `plugins/shunt/agents/*.md` (`
 ## How a blocked read looks
 
 ```
-shunt: src/generated/api.ts is 4210 lines (limit 350). Reading it whole would burn frontier-model tokens.
+shunt: src/generated/api.ts is 4210 lines (limit 200). Reading it whole would burn frontier-model tokens.
 Do one of these instead:
   1. Delegate: launch the `bulk-reader` subagent ...
   2. Target: search first (Grep for the symbol you need), then Read with `offset` and `limit` ...
