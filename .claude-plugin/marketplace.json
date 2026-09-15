@@ -10,8 +10,8 @@
     {
       "name": "shunt",
       "source": "./plugins/shunt",
-      "description": "Blocks oversized reads and diff dumps, routes work to bulk-reader / code-writer / reviewer subagents, and injects orchestration rules plus a /task dashboard. No external services.",
-      "version": "0.2.1",
+      "description": "Blocks oversized reads and diff dumps, routes work to bulk-reader / code-writer / reviewer subagents, and injects orchestration rules plus /review and /task commands. No external services.",
+      "version": "0.2.2",
       "category": "productivity"
     }
   ]

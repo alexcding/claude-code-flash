@@ -35,7 +35,7 @@ types are `shunt:bulk-reader`, `shunt:code-writer` and `shunt:reviewer`.
 | `code-writer` | sonnet | Boilerplate from a brief plus a reference file. |
 | `reviewer` | opus | Review diff, rerun tests, ACCEPT or REWORK. |
 
-Loop: **orchestrate → code-writer → reviewer → orchestrate.**
+Loop: **orchestrate → code-writer → reviewer → orchestrate.** `/review` runs the reviewer directly.
 
 ## Model pinning
 

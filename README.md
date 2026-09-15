@@ -15,6 +15,7 @@ Spotify's version routes files to workers on their internal Portal platform. Thi
 | `code-writer` agent | Sonnet subagent that writes pattern-following boilerplate and reports back a file list instead of the code. |
 | `reviewer` agent | Opus subagent that reviews a diff and returns verified findings as a table. |
 | `SessionStart` hook | Injects [`context/rules.md`](plugins/shunt/context/rules.md) into every main session (startup, resume, `/clear`, after compaction): response contract, roster, delegation, six-part briefs, task buckets, verification and reporting rules. Works like a global `CLAUDE.md` without touching yours. |
+| `/review` command | Hands the working tree, a PR number, a branch or paths to the `reviewer` subagent and relays its findings table and ACCEPT / REWORK verdict. Shows as `/shunt:review` if another command already uses `/review`. |
 | `/task` command | Task dashboard. `/task` lists buckets under `.claude/scratch/`; `/task <sentence>` continues the matching bucket or opens a new one. |
 
 Subagents are exempt from all hooks, so the workers can read whatever they need. The hooks also see through `rtk`, `sudo`, `time`, `nice`, and leading `VAR=x` prefixes.
@@ -30,14 +31,14 @@ Restart Claude Code (or start a new session). `python3` must be on your `PATH`; 
 
 ### Without the plugin system
 
-If you would rather have the pieces in `~/.claude` directly (agents, `/task`, hooks, rules, settings):
+If you would rather have the pieces in `~/.claude` directly (agents, `/review`, `/task`, hooks, rules, settings):
 
 ```
 git clone https://github.com/Alexcding/claude-code-shunt
 ./claude-code-shunt/standalone/install.sh
 ```
 
-The script copies the agents, `/task`, hook scripts and rules, then merges the `env` and `hooks` entries from `standalone/settings.json` into your settings, and leaves everything else untouched.
+The script copies the agents, `/review`, `/task`, hook scripts and rules, then merges the `env` and `hooks` entries from `standalone/settings.json` into your settings, and leaves everything else untouched.
 
 ## Configure
 
@@ -105,6 +106,7 @@ plugins/shunt/
   hooks/hooks.json                  PreToolUse hooks for Read and Bash, SessionStart rules hook
   scripts/                          hook implementations (python3, stdlib only)
   agents/                           bulk-reader, code-writer, reviewer subagents
+  commands/review.md                /review: Opus review via the reviewer subagent
   commands/task.md                  /task dashboard
   context/rules.md                  rules injected at session start
 standalone/                         install without the plugin system
