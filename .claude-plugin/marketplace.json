@@ -11,7 +11,7 @@
       "name": "shunt",
       "source": "./plugins/shunt",
       "description": "Blocks oversized reads and diff dumps, routes work to bulk-reader / code-writer / reviewer subagents, and injects orchestration rules plus a /task dashboard. No external services.",
-      "version": "0.2.0",
+      "version": "0.2.1",
       "category": "productivity"
     }
   ]
