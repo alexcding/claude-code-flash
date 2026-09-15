@@ -1,6 +1,6 @@
 ---
 name: bulk-reader
-description: Cheap worker for I/O-heavy reading. Use instead of reading large files (over the shunt threshold) or several files into the main context. Give it a precise question plus the paths; it returns structured bullets only. Not for reasoning, design, or planning.
+description: Cheap worker for I/O-heavy reading. Use instead of reading large files (over the flash threshold) or several files into the main context. Give it a precise question plus the paths; it returns structured bullets only. Not for reasoning, design, or planning.
 model: sonnet
 effort: medium
 tools: [Read, Grep, Glob, Bash]

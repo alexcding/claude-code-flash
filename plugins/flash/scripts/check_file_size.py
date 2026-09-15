@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""PreToolUse hook for Read: deny whole-file reads above SHUNT_MIN_LINES in the main session.
+"""PreToolUse hook for Read: deny whole-file reads above FLASH_MIN_LINES in the main session.
 
 Allowed through: subagents, targeted reads (offset/limit), small files, binary files.
 """
@@ -7,7 +7,7 @@ import os
 import sys
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from shunt_common import (count_lines, deny, disabled, is_subagent, min_lines,  # noqa: E402
+from flash_common import (count_lines, deny, disabled, is_subagent, min_lines,  # noqa: E402
                           read_input, redirect_message)
 
 

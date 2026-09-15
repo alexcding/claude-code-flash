@@ -7,7 +7,7 @@ allowed-tools: Bash, Read, Write, Glob
 Task request: **$ARGUMENTS**
 
 A bucket is the folder `.claude/scratch/<slug>/` for one task. The index file
-`.claude/scratch/INDEX.md` lists every bucket. Rules for buckets are in the shunt rules (Task buckets).
+`.claude/scratch/INDEX.md` lists every bucket. Rules for buckets are in the flash rules (Task buckets).
 
 ## 1. Read the index
 

@@ -1,6 +1,6 @@
 {
-  "name": "shunt",
-  "version": "0.2.2",
+  "name": "flash",
+  "version": "0.3.0",
   "description": "Cut Claude Code token usage: block large reads and diff dumps, delegate to Sonnet/Opus subagents, and inject orchestration rules plus /review and /task commands. Fully local.",
   "author": {
     "name": "Alexcding"

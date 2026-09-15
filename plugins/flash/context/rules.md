@@ -1,4 +1,4 @@
-# Shunt rules
+# Flash rules
 
 Every session, every project. A repo's own `CLAUDE.md` wins on conflict.
 
@@ -27,7 +27,7 @@ new architecture and subtle logic; final judgment on every important finding.
 ## Roster
 
 Model, effort and tools are pinned in each agent file. Installed as a plugin, the agent
-types are `shunt:bulk-reader`, `shunt:code-writer` and `shunt:reviewer`.
+types are `flash:bulk-reader`, `flash:code-writer` and `flash:reviewer`.
 
 | Agent | Model | For |
 |---|---|---|
@@ -48,7 +48,7 @@ Resolution order: per-invocation `model` → agent frontmatter (`inherit` = main
 
 ## Delegation (main session only)
 
-- Spawn for: files over `SHUNT_MIN_LINES` (default 200), more than one file, directory
+- Spawn for: files over `FLASH_MIN_LINES` (default 200), more than one file, directory
   sweeps, boilerplate mirroring an existing file, independent review, parallel research.
 - Do myself: one-line fix, single grep, single targeted `offset`/`limit` read, a question
   I can answer.

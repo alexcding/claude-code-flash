@@ -11,7 +11,7 @@ import shlex
 import sys
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from shunt_common import (count_lines, deny, disabled, is_subagent, min_lines,  # noqa: E402
+from flash_common import (count_lines, deny, disabled, is_subagent, min_lines,  # noqa: E402
                           read_input, redirect_message, strip_wrappers)
 
 DUMP_CMDS = {"cat", "less", "more", "bat", "batcat"}

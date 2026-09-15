@@ -1,5 +1,5 @@
 {
-  "name": "claude-code-shunt",
+  "name": "claude-code-flash",
   "owner": {
     "name": "Alexcding"
   },
@@ -8,10 +8,10 @@
   },
   "plugins": [
     {
-      "name": "shunt",
-      "source": "./plugins/shunt",
+      "name": "flash",
+      "source": "./plugins/flash",
       "description": "Blocks oversized reads and diff dumps, routes work to bulk-reader / code-writer / reviewer subagents, and injects orchestration rules plus /review and /task commands. No external services.",
-      "version": "0.2.2",
+      "version": "0.3.0",
       "category": "productivity"
     }
   ]

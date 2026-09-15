@@ -1,12 +1,12 @@
 #!/usr/bin/env bash
-# Install shunt without the plugin system: copies agents, /task, hooks and rules into ~/.claude and merges settings.
+# Install flash without the plugin system: copies agents, /task, hooks and rules into ~/.claude and merges settings.
 set -euo pipefail
 HERE="$(cd "$(dirname "$0")/.." && pwd)"
-mkdir -p ~/.claude/agents ~/.claude/commands ~/.claude/hooks/shunt
-cp "$HERE"/plugins/shunt/agents/*.md ~/.claude/agents/
-cp "$HERE"/plugins/shunt/commands/*.md ~/.claude/commands/
-cp "$HERE"/plugins/shunt/scripts/*.py ~/.claude/hooks/shunt/
-cp "$HERE"/plugins/shunt/context/rules.md ~/.claude/hooks/shunt/rules.md
+mkdir -p ~/.claude/agents ~/.claude/commands ~/.claude/hooks/flash
+cp "$HERE"/plugins/flash/agents/*.md ~/.claude/agents/
+cp "$HERE"/plugins/flash/commands/*.md ~/.claude/commands/
+cp "$HERE"/plugins/flash/scripts/*.py ~/.claude/hooks/flash/
+cp "$HERE"/plugins/flash/context/rules.md ~/.claude/hooks/flash/rules.md
 if [ -f ~/.claude/settings.json ]; then
   python3 - "$HERE/standalone/settings.json" <<'PY'
 import json, os, sys
@@ -24,4 +24,4 @@ PY
 else
   cp "$HERE/standalone/settings.json" ~/.claude/settings.json && echo "wrote ~/.claude/settings.json"
 fi
-echo "Done. The SessionStart hook injects the shunt rules; nothing to add to CLAUDE.md."
+echo "Done. The SessionStart hook injects the flash rules; nothing to add to CLAUDE.md."

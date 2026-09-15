@@ -1,5 +1,5 @@
 ---
-description: Opus code review via the shunt reviewer subagent. With no words, reviews the working tree. Accepts a PR number, branch, or paths.
+description: Opus code review via the flash reviewer subagent. With no words, reviews the working tree. Accepts a PR number, branch, or paths.
 argument-hint: [PR number | branch | paths]
 allowed-tools: Agent, Bash(git status:*), Bash(git rev-parse:*), Bash(git diff --stat:*), Bash(gh pr view:*)
 ---
@@ -16,7 +16,7 @@ Do not read the diff yourself. The reviewer does that on its own model.
    If the working tree is the target and `git diff --stat HEAD` is empty, say there is nothing
    to review and stop.
 2. Run `git status --short` and keep the output.
-3. Launch the `shunt:reviewer` subagent (`reviewer` if shunt was installed standalone) with a
+3. Launch the `flash:reviewer` subagent (`reviewer` if flash was installed standalone) with a
    brief that names the repo root, the exact target from step 1, and anything the user added
    about what to focus on. Do not pass your own opinion of the change.
 4. Run `git status --short` again. If it differs from step 2, the reviewer edited files: say

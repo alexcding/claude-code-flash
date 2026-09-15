@@ -11,7 +11,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python3 \"$HOME\"/.claude/hooks/shunt/check_file_size.py"
+            "command": "python3 \"$HOME\"/.claude/hooks/flash/check_file_size.py"
           }
         ]
       },
@@ -20,11 +20,11 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python3 \"$HOME\"/.claude/hooks/shunt/check_bash_read.py"
+            "command": "python3 \"$HOME\"/.claude/hooks/flash/check_bash_read.py"
           },
           {
             "type": "command",
-            "command": "python3 \"$HOME\"/.claude/hooks/shunt/check_diff_dump.py"
+            "command": "python3 \"$HOME\"/.claude/hooks/flash/check_diff_dump.py"
           }
         ]
       }
@@ -34,7 +34,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python3 \"$HOME\"/.claude/hooks/shunt/session_rules.py"
+            "command": "python3 \"$HOME\"/.claude/hooks/flash/session_rules.py"
           }
         ]
       }

@@ -1,4 +1,4 @@
-"""Shared helpers for the shunt hooks (python3 stdlib only)."""
+"""Shared helpers for the flash hooks (python3 stdlib only)."""
 import json
 import os
 import re
@@ -12,15 +12,24 @@ BINARY_EXT = {
 }
 
 
+def env(name, default=""):
+    """FLASH_<name>, falling back to the pre-rename SHUNT_<name>."""
+    return os.environ.get("FLASH_" + name, os.environ.get("SHUNT_" + name, default))
+
+
+def flag(name):
+    return env(name).lower() in {"1", "true", "yes"}
+
+
 def min_lines():
     try:
-        return max(1, int(os.environ.get("SHUNT_MIN_LINES", "200")))
+        return max(1, int(env("MIN_LINES", "200")))
     except ValueError:
         return 200
 
 
 def disabled():
-    return os.environ.get("SHUNT_DISABLE", "").lower() in {"1", "true", "yes"}
+    return flag("DISABLE")
 
 
 def read_input():
@@ -73,9 +82,9 @@ def deny(reason):
 
 def redirect_message(path, lines, limit):
     return (
-        "shunt: {p} is {n} lines (limit {m}). Reading it whole into the main session burns frontier-model tokens.\n"
+        "flash: {p} is {n} lines (limit {m}). Reading it whole into the main session burns frontier-model tokens.\n"
         "Do one of these instead:\n"
-        "  1. Delegate: launch the `bulk-reader` subagent (Agent tool, subagent_type \"shunt:bulk-reader\" as a plugin, \"bulk-reader\" standalone) with the path(s) and a precise question. It runs on a cheaper model and returns bullets, not file dumps.\n"
+        "  1. Delegate: launch the `bulk-reader` subagent (Agent tool, subagent_type \"flash:bulk-reader\" as a plugin, \"bulk-reader\" standalone) with the path(s) and a precise question. It runs on a cheaper model and returns bullets, not file dumps.\n"
         "  2. Target: Grep for the symbol you need, then Read with `offset` and `limit`, or use `sed -n` / `head -n` for that range.\n"
-        "Treat this denial as the rule working, not an obstacle to route around. SHUNT_MIN_LINES changes the threshold; SHUNT_DISABLE=1 turns shunt off."
+        "Treat this denial as the rule working, not an obstacle to route around. FLASH_MIN_LINES changes the threshold; FLASH_DISABLE=1 turns flash off."
     ).format(p=path, n=lines, m=limit)
