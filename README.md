@@ -17,7 +17,7 @@ Spotify's version routes files to workers on their internal Portal platform. Thi
 | `SessionStart` hook | Injects [`context/rules.md`](plugins/shunt/context/rules.md) into every main session (startup, resume, `/clear`, after compaction): response contract, roster, delegation, six-part briefs, task buckets, verification and reporting rules. Works like a global `CLAUDE.md` without touching yours. |
 | `/task` command | Task dashboard. `/task` lists buckets under `.claude/scratch/`; `/task <sentence>` continues the matching bucket or opens a new one. |
 
-Subagents are exempt from all hooks, so the workers can read whatever they need. The hooks also see through `rtk`, `sudo`, `time`, and leading `VAR=x` prefixes.
+Subagents are exempt from all hooks, so the workers can read whatever they need. The hooks also see through `rtk`, `sudo`, `time`, `nice`, and leading `VAR=x` prefixes.
 
 ## Install
 
@@ -30,7 +30,7 @@ Restart Claude Code (or start a new session). `python3` must be on your `PATH`; 
 
 ### Without the plugin system
 
-If you would rather have the pieces in `~/.claude` directly (agents, hooks, settings):
+If you would rather have the pieces in `~/.claude` directly (agents, `/task`, hooks, rules, settings):
 
 ```
 git clone https://github.com/Alexcding/claude-code-shunt
@@ -60,7 +60,7 @@ Environment variables, settable in your shell or in `.claude/settings.json`:
 | `CLAUDE_CODE_SUBAGENT_MODEL` | unset | Claude Code's own setting; `sonnet` makes every subagent without an explicit `model:` run on Sonnet. The standalone settings set this. |
 | `CLAUDE_CODE_MAX_SUBAGENT_SPAWN_DEPTH` | unset | Claude Code's own setting; `1` stops subagents from spawning subagents, so a worker can never fan out on the expensive model. The standalone settings set this. |
 
-Plugins cannot set environment variables for you, so put these in your shell or `.claude/settings.json`. The standalone install sets these two; with the plugin install, add them yourself:
+Plugins cannot set environment variables for you, so put these in your shell or `.claude/settings.json`. The standalone install sets both; with the plugin install, add them yourself:
 
 ```json
 {
