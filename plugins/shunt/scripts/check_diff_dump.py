@@ -19,7 +19,7 @@ SUMMARY_FLAGS = re.compile(
 REASON = (
     "shunt: raw diff output stays out of the main session. Use --stat or --name-only here, "
     "pipe to grep/head for one hunk, or hand the review to the `reviewer` or `bulk-reader` "
-    "subagent and relay its conclusion. SHUNT_DISABLE=1 turns shunt off."
+    "subagent (`shunt:reviewer` / `shunt:bulk-reader` as a plugin) and relay its conclusion. SHUNT_DISABLE=1 turns shunt off."
 )
 
 

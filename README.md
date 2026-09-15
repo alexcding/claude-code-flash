@@ -2,14 +2,14 @@
 
 A local, self-hosted take on the idea in Spotify's ["Portal by Spotify cut my Claude Code token usage by 90%"](https://engineering.atspotify.com/2026/9/portal-by-spotify-cut-my-claude-code-token-usage-by-90): keep the frontier model from reading huge files or churning out boilerplate, and hand that work to a cheaper model instead.
 
-Spotify's version routes files to workers on their internal Portal platform. This one uses nothing but Claude Code itself: two hooks plus two Sonnet subagents. No external service, no extra auth, no source code leaving your Anthropic account.
+Spotify's version routes files to workers on their internal Portal platform. This one uses nothing but Claude Code itself: four hooks, three subagents (two on Sonnet, one on Opus) and a rules file. No external service, no extra auth, no source code leaving your Anthropic account.
 
 ## What it does
 
 | Piece | Role |
 |---|---|
 | `Read` hook | Denies whole-file reads over `SHUNT_MIN_LINES` (default 200) and tells Claude to delegate or read a targeted window instead. |
-| `Bash` read hook | Denies `cat` / `head` / `tail` / `less` / `more` / `bat` of large files when the output is not piped or redirected. `cat big.log \| grep ERROR` and `head -50 big.log` are still allowed. |
+| `Bash` read hook | Denies `cat` / `less` / `more` / `bat` of large files when the output is not piped or redirected. `cat big.log \| grep ERROR`, `head` and `tail` are still allowed. |
 | `Bash` diff hook | Denies bare `git diff`, `git show`, and `gh pr diff` in the main session. Summary forms (`--stat`, `--name-only`, `--oneline`, ...) and piped forms pass. |
 | `bulk-reader` agent | Sonnet subagent that reads files and returns structured bullets, never file dumps. |
 | `code-writer` agent | Sonnet subagent that writes pattern-following boilerplate and reports back a file list instead of the code. |
@@ -57,14 +57,15 @@ Environment variables, settable in your shell or in `.claude/settings.json`:
 | `SHUNT_ALLOW_DIFF` | unset | Set to `1` to switch off only the diff hook. |
 | `SHUNT_DISABLE` | unset | Set to `1` to switch all hooks off, including the rules injection. |
 | `SHUNT_NO_RULES` | unset | Set to `1` to skip only the `SessionStart` rules injection. |
-| `CLAUDE_CODE_SUBAGENT_MODEL` | unset | Claude Code's own setting; `sonnet` makes every subagent without an explicit `model:` run on Sonnet. |
+| `CLAUDE_CODE_SUBAGENT_MODEL` | unset | Claude Code's own setting; `sonnet` makes every subagent without an explicit `model:` run on Sonnet. The standalone settings set this. |
 | `CLAUDE_CODE_MAX_SUBAGENT_SPAWN_DEPTH` | unset | Claude Code's own setting; `1` stops subagents from spawning subagents, so a worker can never fan out on the expensive model. The standalone settings set this. |
 
-Plugins cannot set environment variables for you, so put these in your shell or `.claude/settings.json`. The rules assume `CLAUDE_CODE_MAX_SUBAGENT_SPAWN_DEPTH=1`; with the plugin install, add it yourself:
+Plugins cannot set environment variables for you, so put these in your shell or `.claude/settings.json`. The standalone install sets these two; with the plugin install, add them yourself:
 
 ```json
 {
   "env": {
+    "CLAUDE_CODE_SUBAGENT_MODEL": "sonnet",
     "CLAUDE_CODE_MAX_SUBAGENT_SPAWN_DEPTH": "1"
   }
 }
@@ -77,10 +78,11 @@ To use a different worker model, edit `model:` in `plugins/shunt/agents/*.md` (`
 ## How a blocked read looks
 
 ```
-shunt: src/generated/api.ts is 4210 lines (limit 200). Reading it whole would burn frontier-model tokens.
+shunt: src/generated/api.ts is 4210 lines (limit 200). Reading it whole into the main session burns frontier-model tokens.
 Do one of these instead:
-  1. Delegate: launch the `bulk-reader` subagent ...
-  2. Target: search first (Grep for the symbol you need), then Read with `offset` and `limit` ...
+  1. Delegate: launch the `bulk-reader` subagent (Agent tool, subagent_type "shunt:bulk-reader" as a plugin, "bulk-reader" standalone) with the path(s) and a precise question. It runs on a cheaper model and returns bullets, not file dumps.
+  2. Target: Grep for the symbol you need, then Read with `offset` and `limit`, or use `sed -n` / `head -n` for that range.
+Treat this denial as the rule working, not an obstacle to route around. SHUNT_MIN_LINES changes the threshold; SHUNT_DISABLE=1 turns shunt off.
 ```
 
 Claude then either spawns the subagent or narrows the read. Reads that pass `offset` or `limit` go straight through, and subagents are never blocked.

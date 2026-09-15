@@ -105,8 +105,7 @@ branch <x> @ <sha>, tree clean|N dirty
 
 ## While a bucket is open
 
-- Write every brief to `briefs/<agent>-NN.md` before spawning, using a Bash heredoc
-  (the optional project `settings.json` denies the Write tool there). NN counts up from 01.
+- Write every brief to `briefs/<agent>-NN.md` before spawning. NN counts up from 01.
   Make it read-only (`attrib +R` on Windows, `chmod a-w` elsewhere). Do not show me
   briefs unless I ask.
 - Every brief must name the bucket and require the agent to read `DECISIONS.md` before
@@ -124,8 +123,8 @@ When the objective is met (last reviewer verdict is ACCEPT and nothing is open i
 `STATE.md`), or I say the task is abandoned:
 
 1. Set `STATE.md` status to `CLOSED <date>` with a two-line outcome summary.
-2. Write anything that outlives the task into the project's handoff note and backlog
-   (see the project `CLAUDE.md`). Recording a follow-up never authorizes doing it.
+2. List anything that outlives the task as follow-ups in that summary. Recording a
+   follow-up never authorizes doing it.
 3. Move `.claude/scratch/<slug>/` to `.claude/scratch/_closed/<slug>/`. Never delete a
    bucket.
 4. Mark the bucket DONE in the index. Tell me in one line.

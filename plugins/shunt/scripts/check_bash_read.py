@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 """PreToolUse hook for Bash: deny dumping a large file into the main session.
 
-Catches `cat`, `head`, `tail`, `less`, `more`, `bat`. Allowed through: subagents,
-anything piped or redirected (`cat big | grep x`, `cat big > copy`), head/tail with an
-explicit count (`head -50`, `tail -n 20`), small files, binary files.
+Catches `cat`, `less`, `more`, `bat`. Allowed through: subagents, anything piped or
+redirected (`cat big | grep x`, `cat big > copy`), small files, binary files.
+`head` and `tail` are never blocked: they print a window, not the whole file.
 """
 import os
 import re
@@ -14,8 +14,7 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from shunt_common import (count_lines, deny, disabled, is_subagent, min_lines,  # noqa: E402
                           read_input, redirect_message, strip_wrappers)
 
-DUMP_CMDS = {"cat", "head", "tail", "less", "more", "bat", "batcat"}
-COUNTED = re.compile(r"(^|\s)-(n|c)?\s*\d+(\s|$)|(^|\s)-(n|c)\s+\d+|--(lines|bytes)[= ]")
+DUMP_CMDS = {"cat", "less", "more", "bat", "batcat"}
 
 
 def main():
@@ -39,8 +38,6 @@ def main():
         except ValueError:
             continue
         if not words or os.path.basename(words[0]) not in DUMP_CMDS:
-            continue
-        if words[0] in {"head", "tail"} and COUNTED.search(stage):
             continue
         for arg in words[1:]:
             if arg.startswith("-"):
