@@ -38,7 +38,7 @@ effort. Never `fable` on a subagent.** Subagents do not spawn subagents.
   sweeps, boilerplate mirroring an existing file, independent review, parallel research.
 - Do myself: one-line fix, single grep, one targeted `offset`/`limit` read, a question I
   can answer.
-- A PreToolUse hook caps whole-file `Read`s and `cat` dumps at the threshold and blocks raw
+- A PreToolUse hook denies whole-file `Read`s and `cat` dumps above the threshold and blocks raw
   `git diff`. **Treat that as the rule working, not an obstacle to route around.** Do not
   page through a large file window by window; one bulk-reader call replaces the loop.
 - Batch related work into one brief; launch independent agents in one message; relay the

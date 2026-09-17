@@ -11,7 +11,7 @@
       "name": "flash",
       "source": "./plugins/flash",
       "description": "Blocks oversized reads and diff dumps, routes work to bulk-reader / code-writer / reviewer subagents, and injects orchestration rules plus /review and /task commands. No external services.",
-      "version": "0.4.0",
+      "version": "0.4.1",
       "category": "productivity"
     }
   ]

@@ -1,9 +1,8 @@
 #!/usr/bin/env python3
-"""PreToolUse hook for Bash: keep large-file dumps out of the main session.
+"""PreToolUse hook for Bash: deny dumping a large file into the main session.
 
-Catches `cat`, `less`, `more`, `bat`. Only a bare `cat <one file>` is rewritten to
-`head -n FLASH_MIN_LINES <file>` with a note, so no turn is wasted on a refusal; anything
-more complex (flags, several files, chained commands) is denied. FLASH_DENY=1 always denies.
+Catches `cat`, `less`, `more`, `bat`. Globs are expanded before the size check, and a
+dump command the hook cannot parse is denied rather than waved through.
 
 Allowed through: subagents, anything piped or redirected (`cat big | grep x`,
 `cat big > copy`), small files, binary files. `head` and `tail` are never blocked.
@@ -15,9 +14,8 @@ import shlex
 import sys
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from flash_common import (allow_rewritten, count_lines, deny, deny_mode, disabled,  # noqa: E402
-                          is_subagent, min_lines, read_input, redirect_message,
-                          strip_wrappers, window_message)
+from flash_common import (count_lines, deny, disabled, is_subagent, min_lines,  # noqa: E402
+                          read_input, redirect_message, strip_wrappers)
 
 DUMP_CMDS = {"cat", "less", "more", "bat", "batcat"}
 DUMP_START = re.compile(r"^(?:\S*/)?(?:cat|less|more|bat|batcat)\s")
@@ -30,15 +28,13 @@ def main():
     data = read_input()
     if is_subagent(data):
         return
-    tool_input = data.get("tool_input") or {}
-    command = tool_input.get("command") or ""
+    command = (data.get("tool_input") or {}).get("command") or ""
     cwd = data.get("cwd") or os.getcwd()
     if not command.strip():
         return
 
     limit = min_lines()
-    chunks = re.split(r"\n|;|&&|\|\|", command)
-    for chunk in chunks:
+    for chunk in re.split(r"\n|;|&&|\|\|", command):
         if "|" in chunk or ">" in chunk:
             continue  # piped or redirected: output is filtered or not shown
         stage = strip_wrappers(chunk)
@@ -56,17 +52,8 @@ def main():
             path = arg if os.path.isabs(arg) else os.path.join(cwd, os.path.expanduser(arg))
             matches = glob.glob(path) or [path]  # `cat *.log` is checked file by file
             lines = max((count_lines(m) or 0) for m in matches)
-            if lines <= limit:
-                continue
-            if len(matches) > 1:
+            if lines > limit:
                 deny(redirect_message(arg, lines, limit))
-            # Only a bare `cat <file>` is rewritten; less/more/bat change output semantics.
-            simple = (len(chunks) == 1 and len(words) == 2 and stage == command.strip()
-                      and os.path.basename(words[0]) == "cat")
-            if deny_mode() or not simple:
-                deny(redirect_message(arg, lines, limit))
-            head = "head -n {} {}".format(limit, shlex.quote(arg))
-            allow_rewritten(dict(tool_input, command=head), window_message(arg, lines, limit))
 
 
 if __name__ == "__main__":
