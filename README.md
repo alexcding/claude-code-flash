@@ -8,13 +8,13 @@ Spotify's version routes files to workers on their internal Portal platform. Thi
 
 | Piece | Role |
 |---|---|
-| `Read` hook | Denies whole-file reads over `FLASH_MIN_LINES` (default 200) and tells Claude to delegate or read a targeted window instead. |
-| `Bash` read hook | Denies `cat` / `less` / `more` / `bat` of large files when the output is not piped or redirected. `cat big.log \| grep ERROR`, `head` and `tail` are still allowed. |
+| `Read` hook | Caps whole-file reads over `FLASH_MIN_LINES` (default 200): the read goes through with `limit` set to the threshold and a note telling Claude to delegate or read one more targeted window. No turn is spent on a refusal. `FLASH_DENY=1` refuses instead. |
+| `Bash` read hook | Caps `cat` / `less` / `more` / `bat` of large files when the output is not piped or redirected: a bare `cat big.log` becomes `head -n 200 big.log` plus the note; globs, several files, other flags and commands the hook cannot parse are denied. `cat big.log \| grep ERROR`, `head` and `tail` are still allowed. |
 | `Bash` diff hook | Denies bare `git diff`, `git show`, and `gh pr diff` in the main session. Summary forms (`--stat`, `--name-only`, `--oneline`, ...) and piped forms pass. |
 | `bulk-reader` agent | Sonnet subagent that reads files and returns structured bullets, never file dumps. |
 | `code-writer` agent | Sonnet subagent that writes pattern-following boilerplate and reports back a file list instead of the code. |
 | `reviewer` agent | Opus subagent that reviews a diff and returns verified findings as a table. |
-| `SessionStart` hook | Injects [`context/rules.md`](plugins/flash/context/rules.md) into every main session (startup, resume, `/clear`, after compaction): response contract, roster, delegation, six-part briefs, task buckets, verification and reporting rules. Works like a global `CLAUDE.md` without touching yours. |
+| `SessionStart` hook | Injects [`context/rules.md`](plugins/flash/context/rules.md) into every main session (startup, resume, `/clear`, after compaction): response contract, roster, delegation, six-part briefs, verification and reporting rules, about 1,100 tokens. Bucket rules live in `/task` so they only load when used. Works like a global `CLAUDE.md` without touching yours. |
 | `/review` command | Hands the working tree, a PR number, a branch or paths to the `reviewer` subagent and relays its findings table and ACCEPT / REWORK verdict. Shows as `/flash:review` if another command already uses `/review`. |
 | `/task` command | Task dashboard. `/task` lists buckets under `.claude/scratch/`; `/task <sentence>` continues the matching bucket or opens a new one. |
 
@@ -54,7 +54,8 @@ Environment variables, settable in your shell or in `.claude/settings.json`:
 
 | Variable | Default | Meaning |
 |---|---|---|
-| `FLASH_MIN_LINES` | `200` | Files longer than this are blocked from whole-file reads. Raise to `350` or `500` if it feels too eager. |
+| `FLASH_MIN_LINES` | `200` | Files longer than this are capped to their first `FLASH_MIN_LINES` lines on a whole-file read. Raise to `350` or `500` if it feels too eager. |
+| `FLASH_DENY` | unset | Set to `1` to refuse capped reads outright (the pre-0.4 behaviour) instead of windowing them. Useful for A/B benchmarking. |
 | `FLASH_ALLOW_DIFF` | unset | Set to `1` to switch off only the diff hook. |
 | `FLASH_DISABLE` | unset | Set to `1` to switch all hooks off, including the rules injection. |
 | `FLASH_NO_RULES` | unset | Set to `1` to skip only the `SessionStart` rules injection. |
@@ -78,17 +79,25 @@ The rules are opinionated. Edit `plugins/flash/context/rules.md` in a fork to ch
 
 To use a different worker model, edit `model:` in `plugins/flash/agents/*.md` (`haiku` is cheaper still, `opus` if you want more judgement in summaries).
 
-## How a blocked read looks
+## How a capped read looks
+
+Claude asks to `Read` a 4,210-line file with no `offset`/`limit`. The hook lets the call
+through with `limit: 200` and attaches this note to the result:
 
 ```
-flash: src/generated/api.ts is 4210 lines (limit 200). Reading it whole into the main session burns frontier-model tokens.
-Do one of these instead:
-  1. Delegate: launch the `bulk-reader` subagent (Agent tool, subagent_type "flash:bulk-reader" as a plugin, "bulk-reader" standalone) with the path(s) and a precise question. It runs on a cheaper model and returns bullets, not file dumps.
-  2. Target: Grep for the symbol you need, then Read with `offset` and `limit`, or use `sed -n` / `head -n` for that range.
-Treat this denial as the rule working, not an obstacle to route around. FLASH_MIN_LINES changes the threshold; FLASH_DISABLE=1 turns flash off.
+flash: src/generated/api.ts is 4210 lines; this is lines 1-200 only. Either delegate to the `bulk-reader` subagent (`flash:bulk-reader` as a plugin) with a precise question, or Grep for the symbol and Read one window with `offset`/`limit`. Do not page through the whole file.
 ```
 
-Claude then either spawns the subagent or narrows the read. Reads that pass `offset` or `limit` go straight through, and subagents are never blocked.
+Claude then either spawns the subagent or narrows the read, without having spent a turn on a
+refusal. Reads that pass `offset` or `limit` go straight through, and subagents are never
+capped. With `FLASH_DENY=1` the call is refused with a similar message instead.
+
+Why not just deny? Every turn re-sends the whole accumulated context, so on a long task cost
+is roughly context size times turn count. A refusal costs one full extra turn each time it
+fires and adds nothing to context; the capped read delivers the same first window in the
+turn Claude already spent. An internal 8-task benchmark on an Opus driver (not checked in here) showed the denial version
+losing 14-24% against plain Claude Code on short read-heavy tasks (many denials, few turns to
+amortise them) while winning 23-34% on long PRs; windowing keeps the cap without the wasted turns.
 
 ## Try the hooks by hand
 
@@ -97,7 +106,7 @@ echo '{"tool_name":"Read","tool_input":{"file_path":"/path/to/big/file"}}' \
   | python3 plugins/flash/scripts/check_file_size.py
 ```
 
-An empty response means "allow". A JSON object with `permissionDecision: "deny"` means blocked.
+An empty response means "allow untouched". A JSON object with `permissionDecision: "allow"` and `updatedInput` means the read was capped; `permissionDecision: "deny"` means blocked (`FLASH_DENY=1`, or a `cat` form too complex to rewrite).
 
 ## Layout
 

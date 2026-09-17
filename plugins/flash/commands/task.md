@@ -7,7 +7,16 @@ allowed-tools: Bash, Read, Write, Glob
 Task request: **$ARGUMENTS**
 
 A bucket is the folder `.claude/scratch/<slug>/` for one task. The index file
-`.claude/scratch/INDEX.md` lists every bucket. Rules for buckets are in the flash rules (Task buckets).
+`.claude/scratch/INDEX.md` lists every bucket. These rules hold for every bucket:
+
+- **One task, one bucket.** Same objective = same bucket. Different objective = new bucket,
+  even if the files overlap. Unsure = ask one question.
+- `STATE.md` is replaced each update; `FINDINGS.md` and `DECISIONS.md` are append-only.
+- Update `INDEX.md` whenever a bucket's status or next action changes. Never delete a bucket.
+- Agents working a bucket **read `DECISIONS.md` before changing anything**. A change that
+  would reverse a recorded decision means **stop and report**, never re-decide. They record
+  findings when discovered, and write `reports/<agent>-NN.md` (NN = the brief's number)
+  before stopping.
 
 ## 1. Read the index
 

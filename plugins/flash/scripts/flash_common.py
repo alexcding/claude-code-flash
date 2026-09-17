@@ -32,6 +32,11 @@ def disabled():
     return flag("DISABLE")
 
 
+def deny_mode():
+    """FLASH_DENY=1 restores the old behaviour: refuse the call instead of windowing it."""
+    return flag("DENY")
+
+
 def read_input():
     try:
         return json.load(sys.stdin)
@@ -40,7 +45,13 @@ def read_input():
 
 
 def is_subagent(data):
-    """Subagents are the cheap workers; they are allowed to read whatever they need."""
+    """Subagents are the cheap workers; they are allowed to read whatever they need.
+
+    `agent_id` is only present when the hook fires inside a subagent. The transcript path
+    check covers older Claude Code versions that do not send it.
+    """
+    if data.get("agent_id"):
+        return True
     transcript = data.get("transcript_path") or ""
     return "/subagents/" in transcript
 
@@ -69,22 +80,42 @@ def count_lines(path):
         return None
 
 
-def deny(reason):
-    print(json.dumps({
-        "hookSpecificOutput": {
-            "hookEventName": "PreToolUse",
-            "permissionDecision": "deny",
-            "permissionDecisionReason": reason,
-        }
-    }))
+def _emit(payload):
+    print(json.dumps({"hookSpecificOutput": dict(hookEventName="PreToolUse", **payload)}))
     sys.exit(0)
+
+
+def deny(reason):
+    _emit({"permissionDecision": "deny", "permissionDecisionReason": reason})
+
+
+def allow_rewritten(updated_input, context):
+    """Let the call through with a rewritten input and a note the model sees with the result.
+
+    Costs no extra turn: the model gets a bounded window instead of a refusal it must
+    react to, and the note tells it how to get the rest.
+    """
+    _emit({
+        "permissionDecision": "allow",
+        "updatedInput": updated_input,
+        "additionalContext": context,
+    })
+
+
+_HOW_TO_GET_THE_REST = (
+    "Either delegate to the `bulk-reader` subagent (`flash:bulk-reader` as a plugin) with a "
+    "precise question, or Grep for the symbol and Read one window with `offset`/`limit`. "
+    "Do not page through the whole file."
+)
+
+
+def window_message(path, lines, limit):
+    return "flash: {p} is {n} lines; this is lines 1-{m} only. ".format(p=path, n=lines, m=limit) + _HOW_TO_GET_THE_REST
 
 
 def redirect_message(path, lines, limit):
     return (
-        "flash: {p} is {n} lines (limit {m}). Reading it whole into the main session burns frontier-model tokens.\n"
-        "Do one of these instead:\n"
-        "  1. Delegate: launch the `bulk-reader` subagent (Agent tool, subagent_type \"flash:bulk-reader\" as a plugin, \"bulk-reader\" standalone) with the path(s) and a precise question. It runs on a cheaper model and returns bullets, not file dumps.\n"
-        "  2. Target: Grep for the symbol you need, then Read with `offset` and `limit`, or use `sed -n` / `head -n` for that range.\n"
-        "Treat this denial as the rule working, not an obstacle to route around. FLASH_MIN_LINES changes the threshold; FLASH_DISABLE=1 turns flash off."
-    ).format(p=path, n=lines, m=limit)
+        "flash: {p} is {n} lines (limit {m}); whole-file reads stay out of the main session. ".format(p=path, n=lines, m=limit)
+        + _HOW_TO_GET_THE_REST
+        + " FLASH_MIN_LINES changes the threshold; FLASH_DISABLE=1 turns flash off."
+    )
